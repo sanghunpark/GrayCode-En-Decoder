@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace std;
 
-GrayCode::GrayCode(Size img_size, int delay_ms) : _delay_ms(delay_ms)
+GrayCode::GrayCode(Size img_size, int delay, bool(*captureFunc)()) : _captureFunc(captureFunc), _delay(delay)
 {
     Mat x_gray_code_image, y_gray_code_image;
     int resolution;
@@ -24,8 +24,12 @@ bool GrayCode::Generate_Gray_Code(Mat& img)
     //cout << " T : " << _t << endl;
     if (_t < 0) // done with recording graycode.
     {
-        //Record_Gray_Code();
-        //cout << "RECORD_GRAY_CODE" << endl;
+        if (End())
+        {
+            img = 0;
+            return false;
+        }
+        
         _t = _msb * 2 + 1;
         _x_value = false;
         return false;
@@ -37,16 +41,27 @@ bool GrayCode::Generate_Gray_Code(Mat& img)
         _Encode(img, _idx, _x_value, _inverse);
         //cout << " encoding : " << _idx << " inverse :" << _inverse << endl;
         _encoded = true;
+        _changed = false;
         _t--;
+
+        imshow("Pattern", img);
+        waitKey(10);
+        _pattern_time = timeNow();        
     }
     return true;
 }
-void GrayCode::Record()
-{
-    waitKey(_delay_ms);
-    _encoded = false; 
-}
 
+void GrayCode::Record()
+{   
+    if (_changed == false)
+        if ((*_captureFunc)())
+            _changed = true;
+    
+    auto dur = duration(timeNow() - _pattern_time);
+    if (_changed || dur >= _delay)   
+        _encoded = false;
+    
+}
 
 bool GrayCode::End()
 {
