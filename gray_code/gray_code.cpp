@@ -1,28 +1,19 @@
-#include "gray.code.h"
-//#include <iostream>
-using namespace cv;
-using namespace std;
+#include "gray_code.h"
 
-GrayCode::GrayCode(Size img_size, int delay, bool(*captureFunc)()) : _captureFunc(captureFunc), _delay(delay)
+GrayCode::GrayCode(Size img_size, int delay, Recorder& rec) : _rec(&rec), _delay(delay)
 {
-    Mat x_gray_code_image, y_gray_code_image;
-    int resolution;
-    
+    int resolution;    
     img_size.width >= img_size.height ? resolution = img_size.width : resolution = img_size.height;
 
     _msb = log(resolution) / log(2); // 1024(2^10) < Resolution <= 2048(2^11)
-    x_gray_code_image.create(img_size, CV_MAKETYPE(CV_8U, _msb + 1)); // n-bit
-    y_gray_code_image.create(img_size, CV_MAKETYPE(CV_8U, _msb + 1)); // n-bit
-
-    cv::split(x_gray_code_image, _x_gray_code_image_array);
-    cv::split(y_gray_code_image, _y_gray_code_image_array);
+    rec.Init_Code_Images(_msb, img_size);
     _t = _msb * 2 + 1;
 }
 
-bool GrayCode::Generate_Gray_Code(Mat& img)
+bool GrayCode::Generate(Mat& img)
 {
     //cout << " T : " << _t << endl;
-    if (_t < 0) // done with recording graycode.
+    if (_t < 0) // done with recording a sequence of graycode.
     {
         if (End())
         {
@@ -37,8 +28,8 @@ bool GrayCode::Generate_Gray_Code(Mat& img)
     if (_encoded == false)
     {
         _idx = _t / 2;
-        _inverse = _t % 2;
-        _Encode(img, _idx, _x_value, _inverse);
+        _non_inverse = _t % 2;
+        _Encode(img, _idx, _x_value, _non_inverse);
         //cout << " encoding : " << _idx << " inverse :" << _inverse << endl;
         _encoded = true;
         _changed = false;
@@ -46,7 +37,7 @@ bool GrayCode::Generate_Gray_Code(Mat& img)
 
         imshow("Pattern", img);
         waitKey(10);
-        _pattern_time = timeNow();        
+        _pattern_time = timeNow();
     }
     return true;
 }
@@ -54,18 +45,21 @@ bool GrayCode::Generate_Gray_Code(Mat& img)
 void GrayCode::Record()
 {   
     if (_changed == false)
-        if ((*_captureFunc)())
+        if (_rec->Record(_non_inverse, _encoded))
             _changed = true;
     
     auto dur = duration(timeNow() - _pattern_time);
-    if (_changed || dur >= _delay)   
+    if (_changed || dur >= _delay)
+    {
+        _rec->SaveCode(_non_inverse, _x_value, _idx);
         _encoded = false;
-    
+        _changed = false;
+    }
 }
 
 bool GrayCode::End()
 {
-    if (_t < 0 && _x_value == false && _encoded == false)
+    if (_t < 0 && _x_value == false)
         return true;
     else
         return false;

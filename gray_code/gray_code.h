@@ -4,38 +4,39 @@
 #include <opencv2/opencv.hpp>
 #include <chrono>
 
+#include "recorder.h"
+
 typedef std::chrono::high_resolution_clock::time_point TimeVar;
 #define timeNow() std::chrono::high_resolution_clock::now()
 #define duration(x) std::chrono::duration_cast<std::chrono::milliseconds>(x).count()
 
 using namespace cv;
+using namespace std;
 
 class GrayCode
 {
 public:
-    GrayCode(Size img_size, int delay, bool (*captureFunc)());
+    GrayCode(Size img_size, int delay, Recorder& rec);
     ~GrayCode(){};
 
-private:
-    std::vector<Mat> _x_gray_code_image_array, _y_gray_code_image_array;
+private:    
     int _msb;
     int _t;
     int _idx = 0;
     const int _delay; // ms
-    bool (*const _captureFunc)();
+    Recorder* _rec;
 
     bool _x_value = true;
-    bool _inverse = true;
+    bool _non_inverse = true;
     bool _encoded = false; // _recored = true;
     bool _changed = false;
     TimeVar _pattern_time;
 
-
 public:
-    bool Generate_Gray_Code(Mat& img);
+    bool Generate(Mat& img);
     bool End();
     void Record();
-        
+
 private:
     void _Encode(Mat image, unsigned code_sequence, bool horizontal, bool inverse);
     unsigned _Decode(unsigned gray_code, int msb);
