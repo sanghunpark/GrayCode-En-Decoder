@@ -9,6 +9,9 @@
 #include "gray_code/recorder.h"
 
 
+#include <bitset>
+
+
 using namespace std;
 using namespace cv;
 
@@ -27,10 +30,46 @@ void GetDesktopResolution(int& horizontal, int& vertical)
     vertical = desktop.bottom;
 }
 
+void mouse_callback(int event, int x, int y, int flag, void* param)
+{
+    if (event == EVENT_MOUSEMOVE) {
+        CamRecorder& cam = *((CamRecorder*) param);
+        Point pttn_p = cam.Decode(Point(x, y));
+        cout << "(" << x << ", " << y << ") - <" << pttn_p.x << ", " << pttn_p.y << ">" << endl;
+    }
+}
+
+// gray code test
+//int main1()
+//{
+//    // set camera
+//    int delay = 500;
+//    CamRecorder cam(delay);
+//
+//    // create a projection image using a resoltuion of a main monitor
+//    int width = 0;
+//    int height = 0;
+//    GetDesktopResolution(height, width);
+//    Mat pattern; pattern.create(height, width, CV_8UC3);
+//    GrayCode gray_code(pattern.size(), delay, cam);
+//
+//    for (int val = 1; val <= pow(2, 30); val *= 2)
+//    {
+//        //int val = 1;
+//        val += 2;
+//        cout << val << "  bin: " << bitset<16>(val) << endl;
+//        cout << val << " gray: " << bitset<16>(gray_code._Binary_To_Gray(val)) << endl;
+//        int _msb = pow(2, 30) / log(2);
+//        cout << val << "  rec: " << bitset<16>(gray_code.Decode(gray_code._Binary_To_Gray(val), _msb)) << endl;
+//        cout << " ---------------------------------------- " << endl;
+//    }
+//    return 0;
+//}
+
 int main()
 {	
     // set camera
-    int delay = 1000;
+    int delay = 500;
     CamRecorder cam(delay);
 
     // create a projection image using a resoltuion of a main monitor
@@ -39,13 +78,15 @@ int main()
     GetDesktopResolution(height, width);
     Mat pattern; pattern.create(height, width, CV_8UC3);
     pattern = 0;
-    namedWindow("Pattern", WINDOW_NORMAL);
+    String win_name = "Pattern";
+    cout << "<" << width << ", " << height << ">" << endl;
+    namedWindow(win_name, WINDOW_NORMAL);
     //moveWindow("Pattern", width, height);
-    setWindowProperty("Pattern", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+    setWindowProperty(win_name, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 
     // ready to start capturing
     putText(pattern, "Press 'Enter' to start", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255,255,255), 2, LINE_AA);
-    imshow("Pattern", pattern);
+    imshow(win_name, pattern);
     do
         cam.Record();
     while (waitKey(10) != 13);
@@ -55,6 +96,13 @@ int main()
         gray_code.Generate(pattern);
         gray_code.Record();
 	}
+
+    // Decode test
+    win_name = "Decode";
+    namedWindow(win_name);
+    setMouseCallback(win_name, mouse_callback, (void*) &cam );
+    imshow(win_name, cam.Frame());
+    waitKey();
          
 	return 0;
 }

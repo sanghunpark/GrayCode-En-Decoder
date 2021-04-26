@@ -20,10 +20,10 @@ public:
     ~GrayCode(){};
 
 private:    
-    int _msb;
+    unsigned _msb;
     int _t;
-    int _idx = 0;
-    const int _delay; // ms
+    unsigned _idx = 0;
+    unsigned _delay; // ms
     Recorder* _rec;
 
     bool _x_value = true;
@@ -36,11 +36,11 @@ public:
     bool Generate(Mat& img);
     bool End();
     void Record();
-
+    static unsigned Decode(unsigned gray_code, int msb);
+    unsigned _Binary_To_Gray(unsigned binary);
 private:
     void _Encode(Mat image, unsigned code_sequence, bool horizontal, bool inverse);
-    unsigned _Decode(unsigned gray_code, int msb);
-    unsigned _Binary_To_Gray(unsigned binary);
+    
     void _Set_Image(Mat image, int y, int x, int value);
 };
 
