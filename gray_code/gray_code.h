@@ -39,11 +39,41 @@ public:
     static unsigned Decode(unsigned gray_code, int msb);
     unsigned _Binary_To_Gray(unsigned binary);
 private:
-    void _Encode(Mat image, unsigned code_sequence, bool horizontal, bool inverse);
-    
-    void _Set_Image(Mat image, int y, int x, int value);
+    void _Encode(Mat& image, unsigned code_sequence, bool horizontal, bool inverse);    
+    void _Set_Image(Mat& image, int y, int x, int value);
 };
 
+
+class Blob
+{
+public:
+    Blob(Size img_size, int delay, Recorder& rec, Size aspect, int scale = 1, float _sigma=10);
+    ~Blob() {};
+
+private:
+    Size2f _interval;
+    vector<Point2f> _grid;
+
+    int _t;
+    Recorder* _rec;
+    unsigned _delay; // ms
+    
+    Mat _blob_patten;
+    float _sigma = 10;
+
+    bool _encoded = false; // _recored = true;
+    bool _changed = false;
+    TimeVar _pattern_time;
+
+public:
+    bool Generate(Mat& img);
+    bool End();
+    void Record();
+
+private:
+    void _Encode(Mat& image, int t);
+    void _Create_Blobs(Size img_size);
+};
 
 
 #endif // _GRAY_CODE_H

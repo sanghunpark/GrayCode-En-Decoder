@@ -16,13 +16,17 @@ public:
 protected:
 	const int _delay;
 	int _msb;
-	std::vector<Mat> _x_gray_code_image_array, _y_gray_code_image_array;
+	vector<Mat> _x_gray_code_image_array, _y_gray_code_image_array;
+	vector<Mat> _blob_image_array;
 	Mat _frame;
 
 public:
-	virtual bool Record(bool inverse, bool encoded = false, bool x_val = true, int idx = 0);
+	virtual bool Record(bool encoded = false);
 	virtual void SaveCode(bool inverse, bool x_val, int idx);
-	void Init_Code_Images(int msb, Size img_size);
+	virtual void SaveBlob(int t);
+	void Init_Gray_Codes(int msb, Size img_size);
+	void Init_Blobs(Size img_size);
+	virtual vector<pair<Point2f, Point2f>> Detect();
 	virtual Point Decode(Point p);
 
 protected:	
@@ -40,7 +44,7 @@ private:
 	
 public:
 #define _THRESHOLD 0.5 // 0 ~ 1
-	bool Record(bool inverse=true, bool encoded=false, bool x_val=true, int idx=0) override;
+	bool Record(bool encoded=false) override;
 	Mat Frame();
 };
 

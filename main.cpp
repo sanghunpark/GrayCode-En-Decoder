@@ -65,8 +65,90 @@ void mouse_callback(int event, int x, int y, int flag, void* param)
 //    }
 //    return 0;
 //}
+//
+//// gaussian blob test   
+//void createGaussian(Size& size, Mat& output, float uX, float uY, float sigmaX, float sigmaY, float amplitude = 1.0f)
+//{
+//    Mat temp = Mat(size, CV_32F);
+//
+//    for(int r = 0; r < size.height; r++)
+//    {
+//        for (int c = 0; c < size.width; c++)
+//        {
+//            float x = ((c - uX) * (c - uX)) / (2.0f * sigmaX * sigmaX);
+//            float y = ((r - uY) * (r - uY)) / (2.0f * sigmaY * sigmaY);
+//            float value = amplitude * exp(-(x + y));
+//            temp.at<float>(r, c) = value;
+//        }
+//    }
+//    normalize(temp, temp, 0.0f, 1.0f, NORM_MINMAX);
+//    output = temp;
+//}
 
 int main()
+{
+    // set camera
+    int delay = 500;
+    CamRecorder cam(delay);
+
+    // create a projection image using a resoltuion of a main monitor
+    int width = 0;
+    int height = 0;
+    GetDesktopResolution(height, width);
+
+    String win_name = "Pattern";
+    cout << "Resoultion: <" << width << ", " << height << ">" << endl;
+    namedWindow(win_name, WINDOW_NORMAL);
+    //moveWindow("Pattern", width, height);
+    setWindowProperty(win_name, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+
+    // blob generation
+    Mat pattern; pattern.create(height, width, CV_8UC3);
+    pattern = 0;
+    // ready to start capturing
+    putText(pattern, "Generating blob pattern...", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
+    imshow(win_name, pattern);
+    waitKey(10);
+    Blob blob(Size(width, height), delay, cam, Size(9, 16), 1, 10);
+
+    pattern = 0;
+    putText(pattern, "Press 'Enter' to start", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
+    imshow(win_name, pattern);
+    do
+        cam.Record();
+    while (waitKey(10) != 13);
+
+    // gray code acquisition
+    GrayCode gray_code(pattern.size(), delay, cam);
+    while (gray_code.End() != true) {
+        if (gray_code.Generate(pattern))
+            gray_code.Record();
+    }
+    // gray blob acquisition
+    while (blob.End() != true) {
+        if (blob.Generate(pattern))
+            blob.Record();
+    }           
+
+    // Decode test
+    win_name = "Decode";
+    namedWindow(win_name);
+    Mat img = cam.Frame();
+
+    vector<pair<Point2f, Point2f>> ret = cam.Detect();
+    for (pair<Point2f, Point2f> match : ret)
+    {
+        circle(img, Point(match.first), 5, Scalar(0, 0, 255), FILLED, LINE_AA);
+        cout << "cam (" << match.first.x << ", " << match.first.y << ") - " <<
+            "prj (" << match.second.x << ", " << match.second.y << ")." << endl;
+    }
+    imshow(win_name, img);
+    waitKey();
+
+}
+
+
+int main1()
 {	
     // set camera
     int delay = 500;
@@ -93,8 +175,8 @@ int main()
         
 	GrayCode gray_code(pattern.size(), delay, cam);
 	while (gray_code.End() != true) {
-        gray_code.Generate(pattern);
-        gray_code.Record();
+        if(gray_code.Generate(pattern))
+            gray_code.Record();
 	}
 
     // Decode test

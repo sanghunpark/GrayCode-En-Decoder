@@ -2,7 +2,7 @@
 #include "gray_code.h"
 #include <bitset>
 
-bool Recorder::Record(bool inverse, bool encoded, bool x_val, int idx)
+bool Recorder::Record(bool encoded)
 {
     return encoded; // true whenever pattern is encoded
 }
@@ -11,22 +11,38 @@ void Recorder::SaveCode(bool _non_inverse, bool x_val, int idx)
 {
     static Mat code_frame;
     if (_non_inverse)
-        code_frame = _frame.clone();
+        _frame.clone().convertTo(code_frame, CV_16SC3);
+        //code_frame = _frame.clone();
     else
     {
         if (idx == 0)
             cout << "here";
         Mat bin;
-        cvtColor(code_frame - _frame.clone(), bin, COLOR_BGR2GRAY);
+        Mat inv_frame;
+        _frame.clone().convertTo(inv_frame, CV_16SC3);
+        Mat(code_frame - inv_frame).convertTo(bin, CV_8UC3);        
+        cvtColor(bin, bin, COLOR_BGR2GRAY);
         threshold(bin, bin, 0, 255, THRESH_BINARY);
+        
         x_val ?
-            _x_gray_code_image_array[idx] = bin.clone() :
-            _y_gray_code_image_array[idx] = bin.clone();
+            bin.clone().convertTo(_x_gray_code_image_array[idx], CV_8UC1) :
+            bin.clone().convertTo(_y_gray_code_image_array[idx], CV_8UC1);
 
         imshow("cap!", bin);
         waitKey(10);
     }
 }
+
+
+void Recorder::SaveBlob(int t)
+{
+    if (t < 0)
+        return;
+    cvtColor(_frame, _blob_image_array[t], COLOR_BGR2GRAY);
+    imshow("cap!", _blob_image_array[t]);
+    waitKey(10);
+}
+
 
 int Recorder::_Sum_Pixels(Mat image)
 {
@@ -38,17 +54,41 @@ int Recorder::_Sum_Pixels(Mat image)
     return sum;
 }
 
-void Recorder::Init_Code_Images(int msb, Size img_size) 
+void Recorder::Init_Gray_Codes(int msb, Size img_size)
 {    
     Mat x_gray_code_image, y_gray_code_image;
     x_gray_code_image.create(img_size, CV_MAKETYPE(CV_8U, msb + 1)); // n-bit
     y_gray_code_image.create(img_size, CV_MAKETYPE(CV_8U, msb + 1)); // n-bit
     _msb = msb;
 
+    _x_gray_code_image_array.clear();
+    _y_gray_code_image_array.clear();
     cv::split(x_gray_code_image, _x_gray_code_image_array);
     cv::split(y_gray_code_image, _y_gray_code_image_array);
 }
 
+void Recorder::Init_Blobs(Size img_size)
+{
+    _blob_image_array.clear();
+    _blob_image_array = vector<Mat>(4, Mat(img_size, CV_8UC1));
+}
+
+vector<pair<Point2f, Point2f>> Recorder::Detect()
+{
+    vector<pair<Point2f, Point2f>> cam_prj;
+    vector<KeyPoint> cam_pnts;
+    SimpleBlobDetector::Params params;
+    params.blobColor = 255; // find white blob
+    Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
+    detector->detect(_blob_image_array[0], cam_pnts);
+
+    for (KeyPoint cam_kp : cam_pnts)
+    {
+        Point prj_p = Decode(cam_kp.pt);
+        cam_prj.push_back(make_pair(cam_kp.pt, prj_p));
+    }
+    return cam_prj;    
+}
 
 Point Recorder::Decode(Point pos)
 {
@@ -73,7 +113,6 @@ Point Recorder::Decode(Point pos)
     }
     point.y = GrayCode::Decode(gray_code, _msb);
 
-
     return point;
 }
 
@@ -87,7 +126,7 @@ CamRecorder::CamRecorder(int delay, int device_idx) : Recorder(delay)
     _vid_cap.set(CAP_PROP_AUTO_EXPOSURE, 0);
 }
 
-bool CamRecorder::Record(bool inverse, bool encoded, bool x_val, int idx)
+bool CamRecorder::Record(bool encoded)
 {
     static Mat prev_frame;
     _vid_cap >> _frame;
