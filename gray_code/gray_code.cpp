@@ -195,34 +195,39 @@ void Blob::_Create_Blobs(Size img_size)
     temp = 0;
 
     // row and col mat
-    Mat r = Mat(img_size, CV_32F);
-    Mat c = Mat(img_size, CV_32F);
+    Mat r = Mat(_interval, CV_32F);
+    Mat c = Mat(_interval, CV_32F);
     for (int i = 0; i < r.rows; i++)
         r.row(i) = i;
     for (int i = 0; i < c.cols; i++)
         c.col(i) = i;
 
+    // create 2D gaussian at a poistion 'p0'
     float amplitude = 1.0f;
+    Point2f p0(_interval.width / 2, _interval.height / 2);
+    Mat x = c - p0.x;
+    x = x.mul(x) / (2.0f * _sigma * _sigma);
+    Mat y = r - p0.y;
+    y = y.mul(y) / (2.0f * _sigma * _sigma);
+    Mat v; cv::exp(-(x + y), v);
+    v = amplitude * v;
+
+    Mat roi;
     for (Point2f p : _grid)
     {
         // create 2D gaussian at a poistion 'p' 
-        Mat x = c - p.x;
-        x = x.mul(x) / (2.0f * _sigma * _sigma);
-        Mat y = r - p.y;
-        y = y.mul(y) / (2.0f * _sigma * _sigma);
-        Mat v; cv::exp(-(x + y), v);
-        v = amplitude*v;
-                
-        // accumulate gaussians
-        Mat m, m_inv; // mask
-        Mat(v - temp).convertTo(m, CV_8UC1, 255);
-        threshold(m, m, 0, 255, THRESH_BINARY);
-        bitwise_not(m, m_inv);
+        v.copyTo(temp(Rect(p.x - _interval.width / 2, p.y - _interval.height / 2, _interval.width, _interval.height)));
+        //        
+        //// accumulate gaussians
+        //Mat m, m_inv; // mask
+        //Mat(v - temp).convertTo(m, CV_8UC1, 255);
+        //threshold(m, m, 0, 255, THRESH_BINARY);
+        //bitwise_not(m, m_inv);
 
-        //Mat temp_, v_;
-        bitwise_and(temp, temp, temp, m_inv);
-        bitwise_and(v, v, v, m);
-        add(temp, v, temp);
+        ////Mat temp_, v_;
+        //bitwise_and(temp, temp, temp, m_inv);
+        //bitwise_and(v, v, v, m);
+        //add(temp, v, temp);
     }
 
     //for (Point2f p : _grid)

@@ -15,8 +15,6 @@ void Recorder::SaveCode(bool _non_inverse, bool x_val, int idx)
         //code_frame = _frame.clone();
     else
     {
-        if (idx == 0)
-            cout << "here";
         Mat bin;
         Mat inv_frame;
         _frame.clone().convertTo(inv_frame, CV_16SC3);

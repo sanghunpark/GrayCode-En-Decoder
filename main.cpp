@@ -94,7 +94,9 @@ int main()
     // create a projection image using a resoltuion of a main monitor
     int width = 0;
     int height = 0;
-    GetDesktopResolution(height, width);
+    int appect_w = 16;
+    int aspect_h = 9;
+    GetDesktopResolution(width, height);
 
     String win_name = "Pattern";
     cout << "Resoultion: <" << width << ", " << height << ">" << endl;
@@ -109,7 +111,7 @@ int main()
     putText(pattern, "Generating blob pattern...", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
     imshow(win_name, pattern);
     waitKey(10);
-    Blob blob(Size(width, height), delay, cam, Size(9, 16), 1, 10);
+    Blob blob(Size(width, height), delay, cam, Size(appect_w, aspect_h), 1, 10);
 
     pattern = 0;
     putText(pattern, "Press 'Enter' to start", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
