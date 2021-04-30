@@ -8,7 +8,7 @@ GrayCode::GrayCode(Size img_size, int delay, Recorder& rec, String win_name) : _
 
     _msb = log(resolution) / log(2); // 1024(2^10) < Resolution <= 2048(2^11)
     cout << "MSB: " << _msb << endl;
-    rec.Init_Gray_Codes(_msb, img_size);
+    rec.Init_Gray_Codes(_msb);
     _t = _msb * 2 + 1;
 }
 
@@ -131,10 +131,10 @@ Blob::Blob(Size img_size, int delay, Recorder& rec, Size aspect, String win_name
     for (int wi = 1; wi < w; wi++)
         for (int hi = 1; hi < h; hi++)
             _grid.push_back(Point2f(wi * _interval.width, hi * _interval.height));
-    rec.Init_Blobs(img_size);
+    rec.Init_Blobs();
     _Create_Blobs(img_size);
 
-    if (_shift == 0)
+    if (_shift <= 0)
         _shift = min(_interval.width, _interval.height) / 4;
     _t = 4;
 }
@@ -152,13 +152,14 @@ bool Blob::Generate(Mat& img)
     //cout << " T : " << _t << endl;   
     if (_encoded == false) // code is saved
     {
+        
         if (End()) // done with recording a sequence of graycode.
         {
             img = 0;
             return false;
         }
 
-        _t--;
+        _t--;        
         _Encode(img, _t);
         //cout << " encoding : " << _idx << " inverse :" << _inverse << endl;
         _encoded = true;

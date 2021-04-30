@@ -65,7 +65,7 @@ int main()
     putText(pattern, "Generating blob pattern...", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
     imshow(win_name, pattern);
     waitKey(10);
-    Blob blob(Size(width, height), delay, cam, Size(appect_w, aspect_h), win_name, 1, 10, 0);
+    Blob blob(Size(width, height), delay, cam, Size(appect_w, aspect_h), win_name, 1, 10, -1);
 
     pattern = 0;
     putText(pattern, "Press 'Enter' to start", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);

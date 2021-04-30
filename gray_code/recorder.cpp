@@ -29,20 +29,24 @@ void Recorder::SaveCode(bool _non_inverse, bool x_val, int idx)
 {
     static Mat code_frame;
     if (_non_inverse)
-        _frame.clone().convertTo(code_frame, CV_16SC3);
-        //code_frame = _frame.clone();
+        code_frame = _frame.clone();
+        //_frame.clone().convertTo(code_frame, CV_16SC3);
     else
     {
         Mat bin;
         Mat inv_frame;
-        _frame.clone().convertTo(inv_frame, CV_16SC3);
-        Mat(code_frame - inv_frame).convertTo(bin, CV_8UC3);        
+        inv_frame = _frame.clone();
+        bin = code_frame - inv_frame;
+        //_frame.clone().convertTo(inv_frame, CV_16SC3);
+        //Mat(code_frame - inv_frame).convertTo(bin, CV_8UC3);      
         cvtColor(bin, bin, COLOR_BGR2GRAY);
         threshold(bin, bin, 0, 255, THRESH_BINARY);
         
         x_val ?
-            bin.clone().convertTo(_x_gray_code_image_array[idx], CV_8UC1) :
-            bin.clone().convertTo(_y_gray_code_image_array[idx], CV_8UC1);
+            _x_gray_code_image_array[idx] = bin.clone() :
+            _y_gray_code_image_array[idx] = bin.clone();
+        //    bin.clone().convertTo(_x_gray_code_image_array[idx], CV_8UC1) :
+        //    bin.clone().convertTo(_y_gray_code_image_array[idx], CV_8UC1);
 
         imshow("cap!", bin);
         waitKey(10);
@@ -70,8 +74,9 @@ int Recorder::_Sum_Pixels(Mat image)
     return sum;
 }
 
-void Recorder::Init_Gray_Codes(int msb, Size img_size)
-{    
+void Recorder::Init_Gray_Codes(int msb)
+{   
+    Size img_size = _frame.size();
     Mat x_gray_code_image, y_gray_code_image;
     x_gray_code_image.create(img_size, CV_MAKETYPE(CV_8U, msb + 1)); // n-bit
     y_gray_code_image.create(img_size, CV_MAKETYPE(CV_8U, msb + 1)); // n-bit
@@ -83,10 +88,13 @@ void Recorder::Init_Gray_Codes(int msb, Size img_size)
     cv::split(y_gray_code_image, _y_gray_code_image_array);
 }
 
-void Recorder::Init_Blobs(Size img_size)
+void Recorder::Init_Blobs()
 {
+    Size img_size = _frame.size();
     _blob_image_array.clear();
-    _blob_image_array = vector<Mat>(4, Mat(img_size, CV_8UC1));
+    for (int i : {0, 1, 2, 3})
+        _blob_image_array.push_back(Mat(img_size, CV_8UC1));
+    //_blob_image_array = vector<Mat>(4, Mat(img_size, CV_8UC1));
 }
 
 vector<pair<Point2f, Point2f>> Recorder::Detect()
@@ -139,6 +147,7 @@ CamRecorder::CamRecorder(int delay, int device_idx) : Recorder(delay)
     if (!_vid_cap.isOpened())
         cout << "Could not open " << device_idx << endl;
     _vid_cap.set(CAP_PROP_AUTO_EXPOSURE, 0);
+    _vid_cap >> _frame;
 }
 
 bool CamRecorder::Record(bool encoded)
