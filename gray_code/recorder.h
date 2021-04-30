@@ -28,15 +28,18 @@ protected:
 	vector<Mat> _blob_image_array;
 	Mat _frame;
 	TimeVar _pattern_time;
+	
 
 public:
-	virtual bool Record(bool encoded = false);
-	virtual void SaveCode(bool inverse, bool x_val, int idx);
+	virtual bool Changed(bool encoded = false);
+	virtual void SaveGray(bool inverse, bool x_val, int idx);
 	virtual void SaveBlob(int t);
 	virtual bool Delayed();
 	virtual void SetEncodingTime();
+	virtual Mat Frame();
 	void Init_Gray_Codes(int msb);
 	void Init_Blobs();
+
 	virtual vector<pair<Point2f, Point2f>> Detect();
 	virtual Point Decode(Point p);
 
@@ -50,14 +53,32 @@ public:
 	CamRecorder(int delay, int device_idx=0);
 	~CamRecorder(){};
 
-private:
+protected:
 	VideoCapture _vid_cap;
 	
 public:
 #define _THRESHOLD 0.5 // 0 ~ 1
-	bool Record(bool encoded=false) override;
-	Mat Frame();
+	bool Changed(bool encoded=false) override;
+	void SaveGray(bool inverse, bool x_val, int idx) override;
+	void SaveBlob(int t) override;
+	Mat Frame() override;
 };
 
+class FileRecorder : public CamRecorder
+{
+public:
+	FileRecorder(int delay, string file);
+	~FileRecorder(){};
+
+	Mat Frame() override;
+	void CaptureByUser();
+
+	static void onTrackBarSlide(int pos, void*);
+	static void onButton(int state, void* ptr);
+
+private:
+	
+	int _slider_pos = 0;
+};
 
 #endif // _RECORDER_H

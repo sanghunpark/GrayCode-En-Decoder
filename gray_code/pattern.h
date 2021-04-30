@@ -22,7 +22,7 @@ protected:
 class GrayCode : public Pattern
 {
 public:
-    GrayCode(Size img_size, Recorder& rec, String win_name="Pattern");
+    GrayCode(Size img_size, Recorder* rec, String win_name="Pattern");
     ~GrayCode(){};
 
 private:    
@@ -51,7 +51,7 @@ private:
 class Blob : public Pattern
 {
 public:
-    Blob(Size img_size, Recorder& rec, Size aspect, String win_name = "Pattern", int scale = 1, float sigma=10, int shift= 1);
+    Blob(Size img_size, Recorder* rec, Size aspect, String win_name = "Pattern", int scale = 1, float sigma=10, int shift= 1);
     ~Blob() {};
 
 private:

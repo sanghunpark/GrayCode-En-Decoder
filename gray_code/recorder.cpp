@@ -20,52 +20,30 @@ Recorder::Recorder(int delay) : _delay(delay)
     _det = SimpleBlobDetector::create(params);
 }
 
-bool Recorder::Record(bool encoded)
+bool Recorder::Changed(bool encoded)
 {
-    return encoded; // true whenever pattern is encoded
+    return false; 
 }
 
-void Recorder::SaveCode(bool _non_inverse, bool x_val, int idx)
+void Recorder::SaveGray(bool _non_inverse, bool x_val, int idx)
 {
-    static Mat code_frame;
-    if (_non_inverse)
-        code_frame = _frame.clone();
-        //_frame.clone().convertTo(code_frame, CV_16SC3);
-    else
-    {
-        Mat bin;
-        Mat inv_frame;
-        inv_frame = _frame.clone();
-        bin = code_frame - inv_frame;
-        //_frame.clone().convertTo(inv_frame, CV_16SC3);
-        //Mat(code_frame - inv_frame).convertTo(bin, CV_8UC3);      
-        cvtColor(bin, bin, COLOR_BGR2GRAY);
-        threshold(bin, bin, 0, 255, THRESH_BINARY);
-        
-        x_val ?
-            _x_gray_code_image_array[idx] = bin.clone() :
-            _y_gray_code_image_array[idx] = bin.clone();
-        //    bin.clone().convertTo(_x_gray_code_image_array[idx], CV_8UC1) :
-        //    bin.clone().convertTo(_y_gray_code_image_array[idx], CV_8UC1);
-
-        imshow("cap!", bin);
-        waitKey(10);
-    }
+    return;
 }
 
 
 void Recorder::SaveBlob(int t)
 {
-    if (t < 0)
-        return;
-    cvtColor(_frame, _blob_image_array[t], COLOR_BGR2GRAY);
-    imshow("cap!", _blob_image_array[t]);
-    waitKey(10);
+    return;
 }
 
 void Recorder::SetEncodingTime()
 {
     _pattern_time = timeNow();
+}
+
+Mat Recorder::Frame()
+{
+    return _frame;
 }
 
 bool Recorder::Delayed()
@@ -158,13 +136,13 @@ CamRecorder::CamRecorder(int delay, int device_idx) : Recorder(delay)
     if (!_vid_cap.isOpened())
         cout << "Could not open " << device_idx << endl;
     _vid_cap.set(CAP_PROP_AUTO_EXPOSURE, 0);
-    _vid_cap >> _frame;
+    Frame();
 }
 
-bool CamRecorder::Record(bool encoded)
+bool CamRecorder::Changed(bool encoded)
 {
     static Mat prev_frame;
-    _vid_cap >> _frame;
+    Frame();
     imshow("Frame", _frame);
     if (!encoded || prev_frame.size().width == 0)
     {
@@ -189,8 +167,123 @@ bool CamRecorder::Record(bool encoded)
         return false;
 }
 
+void CamRecorder::SaveGray(bool _non_inverse, bool x_val, int idx)
+{
+    static Mat code_frame;
+    if (_non_inverse)
+        code_frame = _frame.clone();
+    //_frame.clone().convertTo(code_frame, CV_16SC3);
+    else
+    {
+        Mat bin;
+        Mat inv_frame;
+        inv_frame = _frame.clone();
+        bin = code_frame - inv_frame;
+        //_frame.clone().convertTo(inv_frame, CV_16SC3);
+        //Mat(code_frame - inv_frame).convertTo(bin, CV_8UC3);      
+        cvtColor(bin, bin, COLOR_BGR2GRAY);
+        threshold(bin, bin, 0, 255, THRESH_BINARY);
+
+        x_val ?
+            _x_gray_code_image_array[idx] = bin.clone() :
+            _y_gray_code_image_array[idx] = bin.clone();
+        //    bin.clone().convertTo(_x_gray_code_image_array[idx], CV_8UC1) :
+        //    bin.clone().convertTo(_y_gray_code_image_array[idx], CV_8UC1);
+
+        imshow("cap!", bin);
+        waitKey(10);
+    }
+}
+
+void CamRecorder::SaveBlob(int t)
+{
+    if (t < 0)
+        return;
+    cvtColor(_frame, _blob_image_array[t], COLOR_BGR2GRAY);
+    imshow("cap!", _blob_image_array[t]);
+    waitKey(10);
+}
+
+
 Mat CamRecorder::Frame()
 {
     _vid_cap >> _frame;
     return _frame;
+}
+
+
+/// FileRecorder
+FileRecorder::FileRecorder(int delay, string file) : CamRecorder(delay)
+{
+    _vid_cap.open(file);
+    if (!_vid_cap.isOpened())
+        cout << "Could not open " << file << endl;
+    Frame();
+}
+
+Mat FileRecorder::Frame()
+{
+    if ((_vid_cap.get(CAP_PROP_POS_FRAMES) + 1) < _vid_cap.get(CAP_PROP_FRAME_COUNT))
+        _vid_cap >> _frame;
+    return _frame;
+}
+
+void FileRecorder::onTrackBarSlide(int pos, void* ptr)
+{    
+    ((FileRecorder*)ptr)->_vid_cap.set(CAP_PROP_POS_FRAMES, pos);
+    ((FileRecorder*)ptr)->Frame();
+}
+
+void FileRecorder::onButton(int state, void* ptr)
+{
+    cout << state << endl;
+}
+
+void FileRecorder::CaptureByUser()
+{
+    // create GUI
+    String win_name = "Offset Setter";
+    String trk_name = "Offset Pos";
+
+    namedWindow(win_name, WINDOW_AUTOSIZE);
+    createTrackbar(trk_name, win_name, &_slider_pos, _vid_cap.get(CAP_PROP_FRAME_COUNT), onTrackBarSlide, this);
+    int key = 0;
+    int gray_t = _msb * 2 + 1;
+    int blob_t = 4;
+    bool x_val = true;
+    while (gray_t >= 0 || blob_t >=0)
+    {
+        Mat temp = _frame.clone();
+        imshow(win_name, temp);
+        key = waitKey(10);
+
+        if (gray_t < 0 && x_val == true)
+        {
+            gray_t = _msb * 2 + 1;
+            x_val = false;
+            continue;
+        }
+        if (key == 13)
+        {
+            imshow("enter!", temp);
+            waitKey(10);
+            cout << gray_t << " , " << blob_t << endl;
+            if (gray_t >= 0)
+            {
+                int idx = gray_t / 2;
+                bool non_inv = gray_t % 2;
+                gray_t--;
+                this->SaveGray(non_inv, x_val, idx);               
+                continue;
+            }
+
+            else if (gray_t < 0 && x_val == false && blob_t >= 0)
+            {
+                blob_t--;
+                this->SaveBlob(blob_t);                
+                continue;
+            }
+        }
+    }
+    destroyWindow(win_name);    
 }

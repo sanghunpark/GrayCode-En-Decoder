@@ -1,6 +1,6 @@
 #include "pattern.h"
 
-GrayCode::GrayCode(Size img_size, Recorder& rec, String win_name) : _rec(&rec)
+GrayCode::GrayCode(Size img_size, Recorder* rec, String win_name) : _rec(rec)
 {
     _win_name = win_name;
     int resolution;    
@@ -8,7 +8,7 @@ GrayCode::GrayCode(Size img_size, Recorder& rec, String win_name) : _rec(&rec)
 
     _msb = log(resolution) / log(2); // 1024(2^10) < Resolution <= 2048(2^11)
     cout << "MSB: " << _msb << endl;
-    rec.Init_Gray_Codes(_msb);
+    rec->Init_Gray_Codes(_msb);
     _t = _msb * 2 + 1;
 }
 
@@ -51,12 +51,12 @@ void GrayCode::Record()
         return;
 
     if (_changed == false)
-        if (_rec->Record(_encoded))
+        if (_rec->Changed(_encoded))
             _changed = true;
 
     if (_changed || _rec->Delayed())
     {
-        _rec->SaveCode(_non_inverse, _x_value, _idx);
+        _rec->SaveGray(_non_inverse, _x_value, _idx);
         _encoded = false;
         _changed = false;
     }
@@ -117,7 +117,7 @@ void GrayCode::_Set_Image(Mat& image, int y, int x, int value)
 }
 
 //// Blob
-Blob::Blob(Size img_size, Recorder& rec, Size aspect, String win_name, int scale, float sigma, int shift) : _rec(&rec), _sigma(sigma), _shift(shift)
+Blob::Blob(Size img_size, Recorder* rec, Size aspect, String win_name, int scale, float sigma, int shift) : _rec(rec), _sigma(sigma), _shift(shift)
 {
     _win_name = win_name;
     int w = aspect.width * scale;
@@ -130,7 +130,7 @@ Blob::Blob(Size img_size, Recorder& rec, Size aspect, String win_name, int scale
     for (int wi = 1; wi < w; wi++)
         for (int hi = 1; hi < h; hi++)
             _grid.push_back(Point2f(wi * _interval.width, hi * _interval.height));
-    rec.Init_Blobs();
+    _rec->Init_Blobs();
     _Create_Blobs(img_size);
 
     if (_shift <= 0)
@@ -175,7 +175,7 @@ void Blob::Record()
 {
     if (!_encoded)
         return;
-    _rec->Record(false); // get frame
+    _rec->Changed(false); // get frame
 
 
     if (_rec->Delayed())
