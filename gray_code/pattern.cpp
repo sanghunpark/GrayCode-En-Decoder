@@ -1,6 +1,6 @@
 #include "pattern.h"
 
-GrayCode::GrayCode(Size img_size, int delay, Recorder& rec, String win_name) : _rec(&rec), _delay(delay)
+GrayCode::GrayCode(Size img_size, Recorder& rec, String win_name) : _rec(&rec)
 {
     _win_name = win_name;
     int resolution;    
@@ -40,7 +40,7 @@ bool GrayCode::Generate(Mat& img)
 
         imshow(_win_name, img);
         waitKey(10);
-        _pattern_time = timeNow();
+        _rec->SetEncodingTime();
     }
     return true;
 }
@@ -53,9 +53,8 @@ void GrayCode::Record()
     if (_changed == false)
         if (_rec->Record(_encoded))
             _changed = true;
-    
-    auto dur = duration(timeNow() - _pattern_time);
-    if (_changed || dur >= _delay)
+
+    if (_changed || _rec->Delayed())
     {
         _rec->SaveCode(_non_inverse, _x_value, _idx);
         _encoded = false;
@@ -118,7 +117,7 @@ void GrayCode::_Set_Image(Mat& image, int y, int x, int value)
 }
 
 //// Blob
-Blob::Blob(Size img_size, int delay, Recorder& rec, Size aspect, String win_name, int scale, float sigma, int shift) : _rec(&rec), _delay(delay), _sigma(sigma), _shift(shift)
+Blob::Blob(Size img_size, Recorder& rec, Size aspect, String win_name, int scale, float sigma, int shift) : _rec(&rec), _sigma(sigma), _shift(shift)
 {
     _win_name = win_name;
     int w = aspect.width * scale;
@@ -167,7 +166,7 @@ bool Blob::Generate(Mat& img)
 
         imshow(_win_name, img);
         waitKey(10);
-        _pattern_time = timeNow();
+        _rec->SetEncodingTime();
     }
     return true;
 }
@@ -178,8 +177,8 @@ void Blob::Record()
         return;
     _rec->Record(false); // get frame
 
-    auto dur = duration(timeNow() - _pattern_time);
-    if (dur >= _delay)
+
+    if (_rec->Delayed())
     {
         _rec->SaveBlob(_t);
         _encoded = false;

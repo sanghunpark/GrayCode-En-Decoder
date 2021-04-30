@@ -2,13 +2,8 @@
 #define _PATTERN_H
 
 #include <opencv2/opencv.hpp>
-#include <chrono>
 
 #include "recorder.h"
-
-typedef std::chrono::high_resolution_clock::time_point TimeVar;
-#define timeNow() std::chrono::high_resolution_clock::now()
-#define duration(x) std::chrono::duration_cast<std::chrono::milliseconds>(x).count()
 
 using namespace cv;
 using namespace std;
@@ -27,21 +22,19 @@ protected:
 class GrayCode : public Pattern
 {
 public:
-    GrayCode(Size img_size, int delay, Recorder& rec, String win_name="Pattern");
+    GrayCode(Size img_size, Recorder& rec, String win_name="Pattern");
     ~GrayCode(){};
 
 private:    
     unsigned _msb;
     int _t;
     unsigned _idx = 0;
-    unsigned _delay; // ms
     Recorder* _rec;
 
     bool _x_value = true;
     bool _non_inverse = true;
     bool _encoded = false; // _recored = true;
     bool _changed = false;
-    TimeVar _pattern_time;
 
 public:
     bool Generate(Mat& img);
@@ -58,7 +51,7 @@ private:
 class Blob : public Pattern
 {
 public:
-    Blob(Size img_size, int delay, Recorder& rec, Size aspect, String win_name = "Pattern", int scale = 1, float sigma=10, int shift= 1);
+    Blob(Size img_size, Recorder& rec, Size aspect, String win_name = "Pattern", int scale = 1, float sigma=10, int shift= 1);
     ~Blob() {};
 
 private:
@@ -67,7 +60,6 @@ private:
 
     int _t;
     Recorder* _rec;
-    unsigned _delay; // ms
     
     Mat _blob_pattern;
     float _sigma = 10;
@@ -75,7 +67,6 @@ private:
 
     bool _encoded = false; // _recored = true;
     //bool _changed = false;  // is not used
-    TimeVar _pattern_time;
 
 public:
     bool Generate(Mat& img);

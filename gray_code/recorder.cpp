@@ -63,6 +63,17 @@ void Recorder::SaveBlob(int t)
     waitKey(10);
 }
 
+void Recorder::SetEncodingTime()
+{
+    _pattern_time = timeNow();
+}
+
+bool Recorder::Delayed()
+{
+    auto dur = duration(timeNow() - _pattern_time);
+    return dur >= _delay;
+}
+
 
 int Recorder::_Sum_Pixels(Mat image)
 {

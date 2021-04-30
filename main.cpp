@@ -65,7 +65,7 @@ int main()
     putText(pattern, "Generating blob pattern...", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
     imshow(win_name, pattern);
     waitKey(10);
-    Blob blob(Size(width, height), delay, cam, Size(appect_w, aspect_h), win_name, 1, 10, -1);
+    Blob blob(Size(width, height), cam, Size(appect_w, aspect_h), win_name, 1, 10, -1);
 
     pattern = 0;
     putText(pattern, "Press 'Enter' to start", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
@@ -75,7 +75,7 @@ int main()
     while (waitKey(10) != 13);
 
     // gray code acquisition
-    GrayCode gray_code(pattern.size(), delay, cam, win_name);
+    GrayCode gray_code(pattern.size(), cam, win_name);
     while (gray_code.End() != true) {
         if (gray_code.Generate(pattern))
             gray_code.Record();
