@@ -10,10 +10,11 @@ using namespace std;
 class Recorder
 {
 public:
-	Recorder(int delay) : _delay(delay) {};
+	Recorder(int delay);
 	~Recorder(){};
 
 protected:
+	Ptr<SimpleBlobDetector> _det;
 	const int _delay;
 	int _msb;
 	vector<Mat> _x_gray_code_image_array, _y_gray_code_image_array;

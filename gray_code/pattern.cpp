@@ -1,7 +1,8 @@
-#include "gray_code.h"
+#include "pattern.h"
 
-GrayCode::GrayCode(Size img_size, int delay, Recorder& rec) : _rec(&rec), _delay(delay)
+GrayCode::GrayCode(Size img_size, int delay, Recorder& rec, String win_name) : _rec(&rec), _delay(delay)
 {
+    _win_name = win_name;
     int resolution;    
     img_size.width >= img_size.height ? resolution = img_size.width : resolution = img_size.height;
 
@@ -37,7 +38,7 @@ bool GrayCode::Generate(Mat& img)
         _changed = false;
         _t--;
 
-        imshow("Pattern", img);
+        imshow(_win_name, img);
         waitKey(10);
         _pattern_time = timeNow();
     }
@@ -117,8 +118,9 @@ void GrayCode::_Set_Image(Mat& image, int y, int x, int value)
 }
 
 //// Blob
-Blob::Blob(Size img_size, int delay, Recorder& rec, Size aspect, int scale, float sigma) : _rec(&rec), _delay(delay), _sigma(sigma)
+Blob::Blob(Size img_size, int delay, Recorder& rec, Size aspect, String win_name, int scale, float sigma, int shift) : _rec(&rec), _delay(delay), _sigma(sigma), _shift(shift)
 {
+    _win_name = win_name;
     int w = aspect.width * scale;
     int h = aspect.height * scale;
     _interval.width = img_size.width / w;
@@ -129,14 +131,17 @@ Blob::Blob(Size img_size, int delay, Recorder& rec, Size aspect, int scale, floa
     for (int wi = 1; wi < w; wi++)
         for (int hi = 1; hi < h; hi++)
             _grid.push_back(Point2f(wi * _interval.width, hi * _interval.height));
-    rec.Init_Blobs(img_size);    
+    rec.Init_Blobs(img_size);
     _Create_Blobs(img_size);
+
+    if (_shift == 0)
+        _shift = min(_interval.width, _interval.height) / 4;
     _t = 4;
 }
 
 bool Blob::End()
 {
-    if (_t < 0 && _changed == false  && _encoded == false)
+    if (_t < 0 && _encoded == false)
         return true;
     else
         return false;
@@ -153,13 +158,13 @@ bool Blob::Generate(Mat& img)
             return false;
         }
 
+        _t--;
         _Encode(img, _t);
         //cout << " encoding : " << _idx << " inverse :" << _inverse << endl;
         _encoded = true;
-        _changed = false;
-        _t--;
+        
 
-        imshow("Pattern", img);
+        imshow(_win_name, img);
         waitKey(10);
         _pattern_time = timeNow();
     }
@@ -170,23 +175,29 @@ void Blob::Record()
 {
     if (!_encoded)
         return;
-
-    if (_changed == false)
-        if (_rec->Record(_encoded))
-            _changed = true;
+    _rec->Record(false); // get frame
 
     auto dur = duration(timeNow() - _pattern_time);
-    if (_changed || dur >= _delay)
+    if (dur >= _delay)
     {
         _rec->SaveBlob(_t);
         _encoded = false;
-        _changed = false;
     }
 }
 
 void Blob::_Encode(Mat& image, int t)
 {
-    image = _blob_patten.clone();
+    cout << "t:" << t << endl;
+    // _t: [0 1 2 3], _t%2: [0, 1, 0, 1], int(_t/2): [0, 0, 1, 1]
+    // shift: [(-1,-1), (+1,-1),   [00, 10,
+    //         (-1,+1), (+1,+1)]    01, 11]
+    int t_x, t_y;
+    t_x = _t % 2 ? -(_shift) : _shift;
+    t_y = int(_t / 2) ? -(_shift) : _shift;
+
+    // shift a blob pattern by index
+    Mat trans_mat = (Mat_<double>(2, 3) << 1, 0, t_x, 0, 1, t_y);
+    warpAffine(_blob_pattern, image, trans_mat, image.size(), INTER_LINEAR, BORDER_REFLECT_101);
 }
 
 void Blob::_Create_Blobs(Size img_size)
@@ -212,27 +223,10 @@ void Blob::_Create_Blobs(Size img_size)
     Mat v; cv::exp(-(x + y), v);
     v = amplitude * v;
 
-    Mat roi;
+    // add 2D gaussian at a poistion 'p' in the grid.
     for (Point2f p : _grid)
-    {
-        // create 2D gaussian at a poistion 'p' 
         v.copyTo(temp(Rect(p.x - _interval.width / 2, p.y - _interval.height / 2, _interval.width, _interval.height)));
-        //        
-        //// accumulate gaussians
-        //Mat m, m_inv; // mask
-        //Mat(v - temp).convertTo(m, CV_8UC1, 255);
-        //threshold(m, m, 0, 255, THRESH_BINARY);
-        //bitwise_not(m, m_inv);
-
-        ////Mat temp_, v_;
-        //bitwise_and(temp, temp, temp, m_inv);
-        //bitwise_and(v, v, v, m);
-        //add(temp, v, temp);
-    }
-
-    //for (Point2f p : _grid)
-        //_Draw_Gaussian(temp, p.x, p.y, _sigma, _sigma);
 
     normalize(temp, temp, 0.0f, 1.0f, NORM_MINMAX);
-    temp.convertTo(_blob_patten, CV_8UC1, 255);
+    temp.convertTo(_blob_pattern, CV_8UC1, 255);
 }

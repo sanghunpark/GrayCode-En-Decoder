@@ -1,6 +1,24 @@
 #include "recorder.h"
-#include "gray_code.h"
+#include "pattern.h"
 #include <bitset>
+
+Recorder::Recorder(int delay) : _delay(delay)
+{
+    // initialize a blob detector
+    SimpleBlobDetector::Params params;
+    params.blobColor = 255; // find white blob
+
+    params.filterByArea = true;
+    params.minArea = 10;
+
+    params.filterByCircularity = true;
+    params.minCircularity = 0.8;
+    
+    params.filterByInertia = true;
+    params.minInertiaRatio = 0.5;
+
+    _det = SimpleBlobDetector::create(params);
+}
 
 bool Recorder::Record(bool encoded)
 {
@@ -72,20 +90,19 @@ void Recorder::Init_Blobs(Size img_size)
 }
 
 vector<pair<Point2f, Point2f>> Recorder::Detect()
-{
+{   
     vector<pair<Point2f, Point2f>> cam_prj;
-    vector<KeyPoint> cam_pnts;
-    SimpleBlobDetector::Params params;
-    params.blobColor = 255; // find white blob
-    Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
-    detector->detect(_blob_image_array[0], cam_pnts);
-
-    for (KeyPoint cam_kp : cam_pnts)
+    for (int t = 3; t >= 0; t--)
     {
-        Point prj_p = Decode(cam_kp.pt);
-        cam_prj.push_back(make_pair(cam_kp.pt, prj_p));
+        vector<KeyPoint> cam_pnts;
+        _det->detect(_blob_image_array[t], cam_pnts);
+        for (KeyPoint cam_kp : cam_pnts)
+        {
+            Point prj_p = Decode(cam_kp.pt);
+            cam_prj.push_back(make_pair(cam_kp.pt, prj_p));
+        }
     }
-    return cam_prj;    
+    return cam_prj;   
 }
 
 Point Recorder::Decode(Point pos)

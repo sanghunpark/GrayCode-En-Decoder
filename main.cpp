@@ -5,7 +5,7 @@
 #include <iostream>
 #include <Windows.h>
 
-#include "gray_code/gray_code.h"
+#include "gray_code/pattern.h"
 #include "gray_code/recorder.h"
 
 
@@ -39,56 +39,10 @@ void mouse_callback(int event, int x, int y, int flag, void* param)
     }
 }
 
-// gray code test
-//int main1()
-//{
-//    // set camera
-//    int delay = 500;
-//    CamRecorder cam(delay);
-//
-//    // create a projection image using a resoltuion of a main monitor
-//    int width = 0;
-//    int height = 0;
-//    GetDesktopResolution(height, width);
-//    Mat pattern; pattern.create(height, width, CV_8UC3);
-//    GrayCode gray_code(pattern.size(), delay, cam);
-//
-//    for (int val = 1; val <= pow(2, 30); val *= 2)
-//    {
-//        //int val = 1;
-//        val += 2;
-//        cout << val << "  bin: " << bitset<16>(val) << endl;
-//        cout << val << " gray: " << bitset<16>(gray_code._Binary_To_Gray(val)) << endl;
-//        int _msb = pow(2, 30) / log(2);
-//        cout << val << "  rec: " << bitset<16>(gray_code.Decode(gray_code._Binary_To_Gray(val), _msb)) << endl;
-//        cout << " ---------------------------------------- " << endl;
-//    }
-//    return 0;
-//}
-//
-//// gaussian blob test   
-//void createGaussian(Size& size, Mat& output, float uX, float uY, float sigmaX, float sigmaY, float amplitude = 1.0f)
-//{
-//    Mat temp = Mat(size, CV_32F);
-//
-//    for(int r = 0; r < size.height; r++)
-//    {
-//        for (int c = 0; c < size.width; c++)
-//        {
-//            float x = ((c - uX) * (c - uX)) / (2.0f * sigmaX * sigmaX);
-//            float y = ((r - uY) * (r - uY)) / (2.0f * sigmaY * sigmaY);
-//            float value = amplitude * exp(-(x + y));
-//            temp.at<float>(r, c) = value;
-//        }
-//    }
-//    normalize(temp, temp, 0.0f, 1.0f, NORM_MINMAX);
-//    output = temp;
-//}
-
 int main()
 {
     // set camera
-    int delay = 500;
+    int delay = 1000;
     CamRecorder cam(delay);
 
     // create a projection image using a resoltuion of a main monitor
@@ -111,7 +65,7 @@ int main()
     putText(pattern, "Generating blob pattern...", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
     imshow(win_name, pattern);
     waitKey(10);
-    Blob blob(Size(width, height), delay, cam, Size(appect_w, aspect_h), 1, 10);
+    Blob blob(Size(width, height), delay, cam, Size(appect_w, aspect_h), win_name, 1, 10, 0);
 
     pattern = 0;
     putText(pattern, "Press 'Enter' to start", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255, 255, 255), 2, LINE_AA);
@@ -121,7 +75,7 @@ int main()
     while (waitKey(10) != 13);
 
     // gray code acquisition
-    GrayCode gray_code(pattern.size(), delay, cam);
+    GrayCode gray_code(pattern.size(), delay, cam, win_name);
     while (gray_code.End() != true) {
         if (gray_code.Generate(pattern))
             gray_code.Record();
@@ -147,46 +101,4 @@ int main()
     imshow(win_name, img);
     waitKey();
 
-}
-
-
-int main1()
-{	
-    // set camera
-    int delay = 500;
-    CamRecorder cam(delay);
-
-    // create a projection image using a resoltuion of a main monitor
-    int width = 0;
-    int height = 0;
-    GetDesktopResolution(height, width);
-    Mat pattern; pattern.create(height, width, CV_8UC3);
-    pattern = 0;
-    String win_name = "Pattern";
-    cout << "<" << width << ", " << height << ">" << endl;
-    namedWindow(win_name, WINDOW_NORMAL);
-    //moveWindow("Pattern", width, height);
-    setWindowProperty(win_name, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
-
-    // ready to start capturing
-    putText(pattern, "Press 'Enter' to start", Point(50, height / 2), FONT_HERSHEY_SIMPLEX, 3, Scalar(255,255,255), 2, LINE_AA);
-    imshow(win_name, pattern);
-    do
-        cam.Record();
-    while (waitKey(10) != 13);
-        
-	GrayCode gray_code(pattern.size(), delay, cam);
-	while (gray_code.End() != true) {
-        if(gray_code.Generate(pattern))
-            gray_code.Record();
-	}
-
-    // Decode test
-    win_name = "Decode";
-    namedWindow(win_name);
-    setMouseCallback(win_name, mouse_callback, (void*) &cam );
-    imshow(win_name, cam.Frame());
-    waitKey();
-         
-	return 0;
 }

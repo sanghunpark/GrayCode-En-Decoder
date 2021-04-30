@@ -1,5 +1,5 @@
-#ifndef _GRAY_CODE_H
-#define _GRAY_CODE_H
+#ifndef _PATTERN_H
+#define _PATTERN_H
 
 #include <opencv2/opencv.hpp>
 #include <chrono>
@@ -13,10 +13,21 @@ typedef std::chrono::high_resolution_clock::time_point TimeVar;
 using namespace cv;
 using namespace std;
 
-class GrayCode
+class Pattern
 {
 public:
-    GrayCode(Size img_size, int delay, Recorder& rec);
+    Pattern() {};
+    ~Pattern() {};
+
+protected:
+    String _win_name;
+};
+
+
+class GrayCode : public Pattern
+{
+public:
+    GrayCode(Size img_size, int delay, Recorder& rec, String win_name="Pattern");
     ~GrayCode(){};
 
 private:    
@@ -44,10 +55,10 @@ private:
 };
 
 
-class Blob
+class Blob : public Pattern
 {
 public:
-    Blob(Size img_size, int delay, Recorder& rec, Size aspect, int scale = 1, float _sigma=10);
+    Blob(Size img_size, int delay, Recorder& rec, Size aspect, String win_name = "Pattern", int scale = 1, float sigma=10, int shift= 1);
     ~Blob() {};
 
 private:
@@ -58,11 +69,12 @@ private:
     Recorder* _rec;
     unsigned _delay; // ms
     
-    Mat _blob_patten;
+    Mat _blob_pattern;
     float _sigma = 10;
+    int _shift;
 
     bool _encoded = false; // _recored = true;
-    bool _changed = false;
+    //bool _changed = false;  // is not used
     TimeVar _pattern_time;
 
 public:
@@ -76,4 +88,4 @@ private:
 };
 
 
-#endif // _GRAY_CODE_H
+#endif // _PATTERN_H
